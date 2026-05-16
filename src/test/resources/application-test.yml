@@ -1,0 +1,32 @@
+spring:
+  cloud:
+    config:
+      enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+ratelimit:
+  enabled: true
+  default-algorithm: TOKEN_BUCKET
+  rules:
+    - name: test-per-ip
+      scope: IP
+      algorithm: TOKEN_BUCKET
+      capacity: 3
+      refill-tokens: 3
+      refill-period-seconds: 60
+      path-pattern: "/api/**"
+    - name: test-per-ip-heavy
+      scope: IP
+      algorithm: SLIDING_WINDOW
+      max-requests: 2
+      window-size-seconds: 5
+      path-pattern: "/api/heavy"
+
+logging:
+  level:
+    com.mayanky943.ratelimiter: DEBUG

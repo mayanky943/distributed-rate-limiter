@@ -1,0 +1,68 @@
+spring:
+  application:
+    name: distributed-rate-limiter
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 200ms
+      lettuce:
+        pool:
+          max-active: 32
+          max-idle: 16
+          min-idle: 4
+
+server:
+  port: ${SERVER_PORT:8080}
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 20
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,refresh
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    tags:
+      application: distributed-rate-limiter
+
+ratelimit:
+  enabled: true
+  default-algorithm: TOKEN_BUCKET
+  rules:
+    - name: per-ip-global
+      scope: IP
+      algorithm: TOKEN_BUCKET
+      capacity: 100
+      refill-tokens: 100
+      refill-period-seconds: 60
+      path-pattern: "/api/**"
+    - name: per-ip-heavy
+      scope: IP
+      algorithm: SLIDING_WINDOW
+      max-requests: 5
+      window-size-seconds: 10
+      path-pattern: "/api/heavy"
+    - name: per-user
+      scope: USER
+      algorithm: TOKEN_BUCKET
+      capacity: 1000
+      refill-tokens: 1000
+      refill-period-seconds: 60
+      path-pattern: "/api/**"
+    - name: per-api-key
+      scope: API_KEY
+      algorithm: SLIDING_WINDOW
+      max-requests: 10000
+      window-size-seconds: 60
+      path-pattern: "/api/**"
+
+logging:
+  level:
+    root: INFO
+    com.mayanky943.ratelimiter: INFO
